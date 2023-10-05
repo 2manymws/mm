@@ -1,6 +1,7 @@
 package mm_test
 
 import (
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -21,12 +22,22 @@ func (b *testBuilder) Middleware(req *http.Request) (func(next http.Handler) htt
 }
 
 func TestMM(t *testing.T) {
-	// testMw is a test middleware
+	// testHeaderMw is a test middleware
 	// Set "X-Test" header to all requests
-	testMw := func(next http.Handler) http.Handler {
+	testHeaderMw := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			w.Header().Set("X-Test", "test")
 			next.ServeHTTP(w, r)
+		})
+	}
+
+	// testRewriteMw is a test middleware
+	testRewriteMw := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			rr := httptest.NewRecorder()
+			next.ServeHTTP(rr, r)
+			w.WriteHeader(http.StatusOK)
+			w.Write([]byte("Rewrited!"))
 		})
 	}
 
@@ -35,6 +46,7 @@ func TestMM(t *testing.T) {
 		builders []mm.Builder
 		req      *http.Request
 		want     *http.Response
+		wantBody string
 	}{
 		{
 			name:     "No middleware",
@@ -44,13 +56,14 @@ func TestMM(t *testing.T) {
 				StatusCode: http.StatusOK,
 				Header:     http.Header{"Content-Type": {"text/plain; charset=utf-8"}},
 			},
+			wantBody: "Hello",
 		},
 		{
-			name: "Set testMw to all requests",
+			name: "Set testHeaderMw to all requests",
 			builders: []mm.Builder{
 				&testBuilder{
 					buildFunc: func(req *http.Request) (func(next http.Handler) http.Handler, bool) {
-						return testMw, true
+						return testHeaderMw, true
 					},
 				},
 			},
@@ -62,36 +75,56 @@ func TestMM(t *testing.T) {
 					"X-Test":       {"test"},
 				},
 			},
+			wantBody: "Hello",
 		},
 		{
-			name: "Set testMw to only GET requests (1/2)",
+			name: "Set testRewiteMw to all requests",
 			builders: []mm.Builder{
 				&testBuilder{
 					buildFunc: func(req *http.Request) (func(next http.Handler) http.Handler, bool) {
-						if req.Method != http.MethodGet {
-							return nil, false
-						}
-						return testMw, true
+						return testRewriteMw, true
 					},
 				},
 			},
-			req: &http.Request{Method: http.MethodHead, URL: mustParseURL("http://example.com")},
+			req: &http.Request{Method: http.MethodGet, URL: mustParseURL("http://example.com")},
 			want: &http.Response{
 				StatusCode: http.StatusOK,
 				Header: http.Header{
 					"Content-Type": {"text/plain; charset=utf-8"},
 				},
 			},
+			wantBody: "Rewrited!",
 		},
 		{
-			name: "Set testMw to only GET requests (2/2)",
+			name: "Set testHeaderMw to only GET requests (1/2)",
+			builders: []mm.Builder{
+				&testBuilder{
+					buildFunc: func(req *http.Request) (func(next http.Handler) http.Handler, bool) {
+						if req.Method != http.MethodHead {
+							return nil, false
+						}
+						return testHeaderMw, true
+					},
+				},
+			},
+			req: &http.Request{Method: http.MethodGet, URL: mustParseURL("http://example.com")},
+			want: &http.Response{
+				StatusCode: http.StatusOK,
+				Header: http.Header{
+					"Content-Type": {"text/plain; charset=utf-8"},
+				},
+			},
+			wantBody: "Hello",
+		},
+		{
+			name: "Set testHeaderMw to only GET requests (2/2)",
 			builders: []mm.Builder{
 				&testBuilder{
 					buildFunc: func(req *http.Request) (func(next http.Handler) http.Handler, bool) {
 						if req.Method != http.MethodGet {
 							return nil, false
 						}
-						return testMw, true
+						return testHeaderMw, true
 					},
 				},
 			},
@@ -103,6 +136,7 @@ func TestMM(t *testing.T) {
 					"X-Test":       {"test"},
 				},
 			},
+			wantBody: "Hello",
 		},
 	}
 
@@ -121,6 +155,9 @@ func TestMM(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			t.Cleanup(func() {
+				_ = got.Body.Close()
+			})
 			opts := []cmp.Option{
 				cmpopts.IgnoreFields(http.Response{}, "Status", "Proto", "ProtoMajor", "ProtoMinor", "ContentLength", "TransferEncoding", "Uncompressed", "Trailer", "Request", "Close", "Body"),
 			}
@@ -129,6 +166,13 @@ func TestMM(t *testing.T) {
 			got.Header.Del("Date")
 			if diff := cmp.Diff(tt.want, got, opts...); diff != "" {
 				t.Error(diff)
+			}
+			b, err := io.ReadAll(got.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got := string(b); got != tt.wantBody {
+				t.Errorf("Body: got %q, want %q", got, tt.wantBody)
 			}
 		})
 	}
