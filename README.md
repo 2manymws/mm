@@ -6,9 +6,9 @@ It provides middleware that changes the middlewares used based on the request.
 
 ## Usage
 
-Prepare an instance that implements [`mm.Builder`](https://pkg.go.dev/github.com/k1LoW/mm#Builder) interface.
+Prepare an instance that implements [`mm.Builder`](https://pkg.go.dev/github.com/2manymws/mm#Builder) interface.
 
-Then, generate the middleware ( `func(next http.Handler) http.Handler` ) with [`mm.New`](https://pkg.go.dev/github.com/k1LoW/mm#New)
+Then, generate the middleware ( `func(next http.Handler) http.Handler` ) with [`mm.New`](https://pkg.go.dev/github.com/2manymws/mm#New)
 
 ```go
 package main
@@ -17,7 +17,7 @@ import (
     "log"
     "net/http"
 
-    "github.com/k1LoW/mm"
+    "github.com/2manymws/mm"
 )
 
 func main() {

@@ -10,7 +10,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/k1LoW/httpstub"
-	"github.com/k1LoW/mm"
+	"github.com/2manymws/mm"
 )
 
 type testBuilder struct {

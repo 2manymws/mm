@@ -1,10 +1,10 @@
-module github.com/k1LoW/mm
+module github.com/2manymws/mm
 
 go 1.21.1
 
 require (
-	github.com/google/go-cmp v0.5.9
-	github.com/k1LoW/httpstub v0.11.0
+	github.com/google/go-cmp v0.6.0
+	github.com/k1LoW/httpstub v0.11.1
 )
 
 require (
