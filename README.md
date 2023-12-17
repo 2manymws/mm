@@ -1,4 +1,4 @@
-# mm
+# mm [![Go Reference](https://pkg.go.dev/badge/github.com/2manymws/mm.svg)](https://pkg.go.dev/github.com/2manymws/mm) [![build](https://github.com/2manymws/mm/actions/workflows/ci.yml/badge.svg)](https://github.com/2manymws/mm/actions/workflows/ci.yml) ![Coverage](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/2manymws/mm/coverage.svg) ![Code to Test Ratio](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/2manymws/mm/ratio.svg) ![Test Execution Time](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/2manymws/mm/time.svg)
 
 mm is a **m**iddleware-**m**iddleware for multiple rules.
 
